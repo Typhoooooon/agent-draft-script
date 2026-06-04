@@ -82,11 +82,12 @@ python multi_skill.py
 
 | Demo | 内容 | 学到什么 |
 |------|------|----------|
-| Demo 1 | 纯 LLM vs Agent | 理解 Agent 的本质区别：能否调用外部工具 |
+| Demo 1 | 纯 LLM vs Agent | Agent 的本质区别：能否调用外部工具 |
 | Demo 2 | 多工具组合 | Agent 自动决定需要哪些工具、什么顺序 |
 | Demo 3 | 单 Skill | Skill 如何提升输出质量和稳定性 |
 | Demo 4 | 编程助手 | Skill 的自纠错循环 |
 | Demo 5 | 多 Skill 协作 | 完整的多 Skill 编排流程 |
+| Demo 6 | JD 专项 Skill | MCP 协议、多模态 AI、CV 基础学习 |
 
 ## 核心代码阅读顺序
 
@@ -97,14 +98,3 @@ python multi_skill.py
 3. **`skills.py`** —— 看 Skill 怎么封装和注入
 4. **`multi_skill.py`** —— 看多 Skill 怎么编排
 5. **`demo.py`** —— 看完整的使用场景
-
-## 面试准备
-
-这个项目覆盖了以下面试点：
-
-- ✅ Agent vs LLM 的本质区别
-- ✅ ReAct 循环的代码实现
-- ✅ Tool 的设计原则（描述、参数 schema、错误处理）
-- ✅ Skill 的封装思路（领域知识 + 工具组合）
-- ✅ 多 Skill 协作的编排策略
-- ✅ MCP 协议的概念（Tool 就是 MCP 的 Tools 原语）
