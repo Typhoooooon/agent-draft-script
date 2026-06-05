@@ -133,9 +133,9 @@ def get_current_time(timezone: str = "Asia/Shanghai") -> str:
 
 @register_tool(
     name="get_weather",
-    description="获取指定城市的实时天气信息（温度、湿度、风速、降雨、天气状况）。当用户问'天气''气温''下雨'时使用此工具，不要用 search_web 搜天气。",
+    description="获取指定城市的实时天气（温度/湿度/风速/降雨/紫外线）。仅当用户明确询问天气时使用——因为网页搜索返回的是天气新闻而非结构化数据，天气是少数需要专用数据源的场景。",
     parameters={
-        "city": {"type": "string", "description": "城市名称，中文或英文，如 '深圳'、'Beijing'、'Tokyo'"}
+        "city": {"type": "string", "description": "城市名称，中文或英文，如 '深圳'、'Beijing'"}
     },
 )
 def get_weather(city: str) -> str:
@@ -181,34 +181,36 @@ def get_weather(city: str) -> str:
     },
 )
 def search_web(query: str) -> str:
-    """联网搜索，优先使用 DuckDuckGo，失败时回退到本地知识库。"""
-    # ── 尝试真实联网搜索 ──
+    """联网搜索，返回简洁、信息密度高的结果。用于绝大多数信息获取场景。"""
+
+    # ── DuckDuckGo 网页搜索 ──
     try:
         from ddgs import DDGS
 
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=5):
-                results.append(f"📌 {r['title']}\n   {r['body']}\n   🔗 {r['href']}")
+                # 只保留标题和摘要，LLM 自己提炼答案
+                results.append(f"📌 {r['title']}\n   {r['body']}")
 
         if results:
-            return f"🔍 搜索结果 [{query}]:\n\n" + "\n\n".join(results)
+            return f"🔍 [{query}]\n\n" + "\n\n".join(results)
     except Exception:
         pass
 
-    # ── 尝试旧版 duckduckgo_search ──
+    # ── 旧版兼容 ──
     try:
         from duckduckgo_search import DDGS as DDGS_old
         results = []
         with DDGS_old() as ddgs:
             for r in ddgs.text(query, max_results=5):
-                results.append(f"📌 {r['title']}\n   {r['body']}\n   🔗 {r['href']}")
+                results.append(f"📌 {r['title']}\n   {r['body']}")
         if results:
-            return f"🔍 搜索结果 [{query}]:\n\n" + "\n\n".join(results)
+            return f"🔍 [{query}]\n\n" + "\n\n".join(results)
     except Exception:
         pass
 
-    # ── 本地知识库（离线回退） ──
+    # ── 离线回退 ──
     mock_db = {
         "北京天气": "北京今天晴，15°C ~ 28°C，北风3级，空气质量良",
         "上海天气": "上海今天多云转小雨，20°C ~ 26°C，东南风2级",
