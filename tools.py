@@ -140,8 +140,20 @@ def get_current_time(timezone: str = "Asia/Shanghai") -> str:
 )
 def get_weather(city: str) -> str:
     """通过 wttr.in 获取实时天气（免费，无需 API Key）。"""
+
+    # ── 中英文城市名映射（wttr.in 对英文名更稳定）──
+    _city_map = {
+        "深圳": "Shenzhen", "北京": "Beijing", "上海": "Shanghai",
+        "广州": "Guangzhou", "杭州": "Hangzhou", "成都": "Chengdu",
+        "南京": "Nanjing", "武汉": "Wuhan", "重庆": "Chongqing",
+        "西安": "Xian", "东京": "Tokyo", "大阪": "Osaka",
+        "纽约": "New York", "伦敦": "London", "巴黎": "Paris",
+        "香港": "Hong Kong", "台北": "Taipei", "首尔": "Seoul",
+    }
+    lookup_city = _city_map.get(city, city)
+
     try:
-        url = f"https://wttr.in/{urllib.parse.quote(city)}?format=j1"
+        url = f"https://wttr.in/{urllib.parse.quote(lookup_city)}?format=j1"
         req = urllib.request.Request(url, headers={"User-Agent": "agent-from-scratch"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
@@ -160,8 +172,12 @@ def get_weather(city: str) -> str:
         area_name = nearest["areaName"][0]["value"]
         country = nearest["country"][0]["value"]
 
+        # 以用户查询的城市名为主，气象站位置为辅
+        display_city = city if lookup_city != city else area_name
+        station_note = f"（气象站: {area_name}, {country}）" if display_city != area_name else f", {country}"
+
         return (
-            f"📍 {area_name}, {country}\n"
+            f"📍 {display_city}{station_note}\n"
             f"🌤 天气: {weather_desc}\n"
             f"🌡 当前温度: {temp_c}°C（体感 {feels_like}°C）\n"
             f"💧 湿度: {humidity}%\n"
@@ -331,8 +347,8 @@ if __name__ == "__main__":
     print()
 
     # 手动测试工具
-    print("--- 测试 search_web ---")
-    print(execute_tool("search_web", query="深圳天气"))
+    print("--- 测试 get_weather ---")
+    print(execute_tool("get_weather", city="深圳"))
     print()
 
     print("--- 测试 run_python ---")
