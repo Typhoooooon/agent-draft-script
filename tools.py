@@ -136,10 +136,34 @@ def get_current_time(timezone: str = "Asia/Shanghai") -> str:
     },
 )
 def search_web(query: str) -> str:
-    """
-    教学用模拟搜索。
-    实际工程中，这里应接入真实的搜索 API（如 Tavily、SerpAPI、Bing）。
-    """
+    """联网搜索，优先使用 DuckDuckGo，失败时回退到本地知识库。"""
+    # ── 尝试真实联网搜索 ──
+    try:
+        from ddgs import DDGS
+
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=5):
+                results.append(f"📌 {r['title']}\n   {r['body']}\n   🔗 {r['href']}")
+
+        if results:
+            return f"🔍 搜索结果 [{query}]:\n\n" + "\n\n".join(results)
+    except Exception:
+        pass
+
+    # ── 尝试旧版 duckduckgo_search ──
+    try:
+        from duckduckgo_search import DDGS as DDGS_old
+        results = []
+        with DDGS_old() as ddgs:
+            for r in ddgs.text(query, max_results=5):
+                results.append(f"📌 {r['title']}\n   {r['body']}\n   🔗 {r['href']}")
+        if results:
+            return f"🔍 搜索结果 [{query}]:\n\n" + "\n\n".join(results)
+    except Exception:
+        pass
+
+    # ── 本地知识库（离线回退） ──
     mock_db = {
         "北京天气": "北京今天晴，15°C ~ 28°C，北风3级，空气质量良",
         "上海天气": "上海今天多云转小雨，20°C ~ 26°C，东南风2级",
@@ -147,22 +171,21 @@ def search_web(query: str) -> str:
         "Python": "Python 3.13 已发布，主要特性：无GIL可选模式、改进的错误提示、JIT编译器(实验性)",
         "深度学习": "2026年主流深度学习框架: PyTorch 2.6、TensorFlow 2.18、JAX 0.4。趋势：MLLM多模态模型、Agent框架、边缘AI推理",
         "目标检测": "YOLOv10已发布，主要改进：无NMS训练、Transformer-based检测头、Anchor-free设计。COCO mAP达54.1%",
-        "MCP协议": "Model Context Protocol (MCP) 是Anthropic推出的开放标准，用于LLM与外部工具/数据源的安全交互。支持Tools、Resources、Prompts三种原语。Tools用于执行操作，Resources用于暴露数据，Prompts用于定义交互模板",
-        "CLIP": "CLIP (Contrastive Language-Image Pre-training) 由OpenAI提出，通过对比学习实现图文对齐。核心思想：匹配的图文对拉近，不匹配的拉远。使用双塔结构（ViT/ResNet图像编码器 + Transformer文本编码器）",
-        # ─── JD 专项新增条目 ───
-        "BLIP": "BLIP (Bootstrapping Language-Image Pre-training) 由Salesforce提出，在CLIP基础上增加图像描述生成能力，实现多模态理解与生成的统一框架。BLIP-2引入Q-Former桥接视觉和语言",
+        "MCP协议": "Model Context Protocol (MCP) 是Anthropic推出的开放标准，用于LLM与外部工具/数据源的安全交互。支持Tools、Resources、Prompts三种原语",
+        "CLIP": "CLIP (Contrastive Language-Image Pre-training) 由OpenAI提出，通过对比学习实现图文对齐。使用双塔结构（ViT/ResNet图像编码器 + Transformer文本编码器）",
+        "BLIP": "BLIP (Bootstrapping Language-Image Pre-training) 由Salesforce提出，在CLIP基础上增加图像描述生成能力。BLIP-2引入Q-Former桥接视觉和语言",
         "多模态模型": "主流多模态大模型: GPT-4V/4o (OpenAI)、Gemini (Google)、Claude 3.5 (Anthropic)、LLaVA (开源)、Qwen-VL (阿里)。核心技术: 视觉编码器 + 投影层 + LLM解码器",
-        "ResNet": "ResNet (残差网络) 由微软提出，核心创新是残差连接(skip connection): 输出=F(x)+x。解决了深层网络的梯度消失问题，使得152层网络能够有效训练。变体: ResNet-50/101/152",
-        "Transformer": "Transformer 架构核心: 自注意力(Self-Attention)机制。公式: Attention(Q,K,V)=softmax(QK^T/√d_k)V。Vision Transformer (ViT) 将图像切为patch序列送入Transformer编码器",
-        "图像分割": "主流图像分割模型: SAM (Meta的Segment Anything Model)、Mask R-CNN、U-Net。SAM支持点/框/文本提示实现零样本分割，基于ViT编码器+提示解码器架构",
-        "MCP Tools": "MCP Tools 允许LLM调用外部功能（类似Function Calling）。Server通过 tool/list 列出工具，Client通过 tool/call 执行。每个Tool有名称、描述和JSON Schema参数定义",
+        "ResNet": "ResNet (残差网络) 由微软提出，核心创新是残差连接(skip connection): 输出=F(x)+x。解决了深层网络的梯度消失问题",
+        "Transformer": "Transformer 架构核心: 自注意力(Self-Attention)机制。公式: Attention(Q,K,V)=softmax(QK^T/√d_k)V",
+        "图像分割": "主流图像分割模型: SAM (Meta的Segment Anything Model)、Mask R-CNN、U-Net",
+        "MCP Tools": "MCP Tools 允许LLM调用外部功能（类似Function Calling）。Server通过 tool/list 列出工具，Client通过 tool/call 执行",
     }
 
     for key, result in mock_db.items():
         if key in query:
-            return f"🔍 搜索结果 [{key}]: {result}"
+            return f"🔍 搜索结果 [本地-{key}]: {result}"
 
-    return f"🔍 关于 '{query}' 未找到精确匹配。请尝试更具体的关键词。可用数据范围: {', '.join(mock_db.keys())}"
+    return f"🔍 关于 '{query}' 未找到结果。请尝试更具体的关键词。"
 
 
 @register_tool(
@@ -262,7 +285,7 @@ if __name__ == "__main__":
 
     # 手动测试工具
     print("--- 测试 search_web ---")
-    print(execute_tool("search_web", query="北京天气"))
+    print(execute_tool("search_web", query="深圳天气"))
     print()
 
     print("--- 测试 run_python ---")
