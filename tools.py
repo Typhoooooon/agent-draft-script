@@ -133,9 +133,9 @@ def get_current_time(timezone: str = "Asia/Shanghai") -> str:
 
 @register_tool(
     name="get_weather",
-    description="获取指定城市的实时天气（温度/湿度/风速/降雨/紫外线）。仅当用户明确询问天气时使用——因为网页搜索返回的是天气新闻而非结构化数据，天气是少数需要专用数据源的场景。",
+    description="【天气专用】获取指定城市的实时天气数据：温度、体感温度、湿度、风速风向、降雨量、紫外线指数。这是唯一能获取真实天气数据的工具——search_web 只能搜到天气新闻，没有实时数据。",
     parameters={
-        "city": {"type": "string", "description": "城市名称，中文或英文，如 '深圳'、'Beijing'"}
+        "city": {"type": "string", "description": "城市名，如 '深圳'、'Beijing'"}
     },
 )
 def get_weather(city: str) -> str:
@@ -175,9 +175,9 @@ def get_weather(city: str) -> str:
 
 @register_tool(
     name="search_web",
-    description="搜索网页获取实时信息。当需要最新资讯、事实查证、数据查询时使用。",
+    description="搜索网页获取信息。用于新闻、百科、概念解释、教程等大多数问题。⚠️ 注意：天气查询请用 get_weather（搜索返回的是天气新闻，没有实时数据）。",
     parameters={
-        "query": {"type": "string", "description": "搜索关键词，用中文或英文"}
+        "query": {"type": "string", "description": "搜索关键词（不要用此工具搜天气，天气请用 get_weather）"}
     },
 )
 def search_web(query: str) -> str:
