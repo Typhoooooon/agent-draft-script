@@ -10,6 +10,9 @@ Tool 是 Agent 的最小可调用单元。
 
 import json
 import datetime
+import urllib.parse
+import urllib.request
+import urllib.error
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -126,6 +129,48 @@ def get_current_time(timezone: str = "Asia/Shanghai") -> str:
         timezone = "Asia/Shanghai (fallback, 无法识别指定时区)"
     now = datetime.datetime.now(tz=tz)
     return f"当前时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (时区: {timezone})"
+
+
+@register_tool(
+    name="get_weather",
+    description="获取指定城市的实时天气信息（温度、湿度、风速、降雨、天气状况）。当用户问'天气''气温''下雨'时使用此工具，不要用 search_web 搜天气。",
+    parameters={
+        "city": {"type": "string", "description": "城市名称，中文或英文，如 '深圳'、'Beijing'、'Tokyo'"}
+    },
+)
+def get_weather(city: str) -> str:
+    """通过 wttr.in 获取实时天气（免费，无需 API Key）。"""
+    try:
+        url = f"https://wttr.in/{urllib.parse.quote(city)}?format=j1"
+        req = urllib.request.Request(url, headers={"User-Agent": "agent-from-scratch"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        current = data["current_condition"][0]
+        weather_desc = current["weatherDesc"][0]["value"]
+        temp_c = current["temp_C"]
+        humidity = current["humidity"]
+        wind_speed = current["windspeedKmph"]
+        wind_dir = current["winddir16Point"]
+        precip_mm = current["precipMM"]
+        feels_like = current["FeelsLikeC"]
+        uv = current["uvIndex"]
+
+        nearest = data["nearest_area"][0]
+        area_name = nearest["areaName"][0]["value"]
+        country = nearest["country"][0]["value"]
+
+        return (
+            f"📍 {area_name}, {country}\n"
+            f"🌤 天气: {weather_desc}\n"
+            f"🌡 当前温度: {temp_c}°C（体感 {feels_like}°C）\n"
+            f"💧 湿度: {humidity}%\n"
+            f"💨 风速: {wind_speed} km/h {wind_dir}\n"
+            f"🌧 降雨量: {precip_mm} mm\n"
+            f"☀️ 紫外线指数: {uv}"
+        )
+    except Exception as e:
+        return f"❌ 获取天气失败: {e}。请检查城市名是否正确（支持中文/英文/拼音）。"
 
 
 @register_tool(
